@@ -14,23 +14,16 @@ class CreateTransactionService {
   }
 
   public execute({ title, value, type }: Request): Transaction {
+    // se o type possuir qualquer um desses valores
+    if (!['income', 'outcome'].includes(type)) {
+      throw Error(`Invalid transaction type`);
+    }
+
     // não permitirá que uma transação do tipo outcome extrapole
     // o valor total que o usuário tem em caixa
-    const totalIncome = this.transactionsRepository.reduce(
-      (total: number, transaction: Transaction) => {
-        if (transaction.type === 'income') return total + transaction.value;
-        return total;
-      },
-      0,
-    );
+    const { total } = this.transactionsRepository.getBalance();
 
-    const totalOutcome = this.transactionsRepository.reduce(
-      (total: number, transaction: Transaction) => {
-        if (transaction.type === 'outcome') return total + transaction.value;
-      },
-      0,
-    );
-    if (totalOutcome > totalIncome) {
+    if (type === 'outcome' && total < value) {
       throw Error(`The outcome transaction doesn't have a valid balance`);
     }
 
